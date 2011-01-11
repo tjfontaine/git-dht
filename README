@@ -1,0 +1,8 @@
+git-dht -- Git Decentralized and Distributed
+
+What good is DVCS if you still need to know the peers?
+
+Dependencies:
+Twisted -- http://twistedmatrix.com/
+Entangled -- http://entangled.sourceforge.net
+Dulwich -- http://github.com/jelmer/dulwich
