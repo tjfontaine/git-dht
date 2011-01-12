@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+import hashlib
 import os
 import sys
 
@@ -33,6 +34,7 @@ from socket import getaddrinfo
 from dulwich.repo import Repo
 
 from entangled.node import EntangledNode
+from entangled.kademlia import contact
 
 import twisted.internet.reactor
 
@@ -64,6 +66,7 @@ class GitDht(EntangledNode):
       for ref in rdict['selected_refs']:
         head = repo.ref(ref)
         key = '%s:%s' % (repo_name, ref.replace('/', ':'))
+        self.publishData('%s:head' % key, head)
         seen = []
         tosee = [sha for sha in repo[repo.ref(ref)].parents if sha not in seen]
         while len(tosee) > 0:
@@ -77,6 +80,13 @@ class GitDht(EntangledNode):
               tosee.append(s)
           k = '%s:%s' % (key, sha)
           self.publishData(k, head)
+      self.publishData(repo_name, ','.join(rdict['selected_refs']))
+
+  def searchForValue(self, key):
+    h = hashlib.sha1()
+    h.update(key)
+    return self.iterativeFindValue(h.digest())
+       
 
 if __name__ == '__main__':
   gitconfig_default = {
@@ -135,4 +145,37 @@ if __name__ == '__main__':
 
   gitdht = GitDht(repos, udpPort=gitdht_port)
   gitdht.joinNetwork(bootstrap_ips)
+
+  from twisted.internet import task
+
+  opts = OptionParser()
+  opts.add_option('--search', action="store", dest="search_term",
+    default=None, help="Periodically search for this term")
+  opts.add_option('--search-timer', action="store", type="float", dest="search_timer",
+    default=0, help="The timer for how often to search <= 0 is never")
+  opts.add_option('--print-contacts', action="store_true", dest="print_contacts",
+    default=False, help="Periodically print contacts")
+
+  (options, arguments) = opts.parse_args()
+
+  def searchResults(ret):
+    if isinstance(ret, list):
+      print 'Not found, received peers'
+    else:
+      print ret
+
+  def searchNodes():
+    print 'Searching ...'
+    df = gitdht.searchForValue(options.search_term)
+    df.addCallback(searchResults)
+    gitdht.printContacts()
+
+  if options.search_timer > 0:
+    s = task.LoopingCall(searchNodes)
+    s.start(options.search_timer)
+
+  if options.print_contacts:
+    t = task.LoopingCall(gitdht.printContacts)
+    t.start(30)
+
   twisted.internet.reactor.run()
