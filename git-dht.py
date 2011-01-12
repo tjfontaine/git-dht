@@ -62,10 +62,21 @@ class GitDht(EntangledNode):
     for repo_name, rdict in self.repos.items():
       repo = rdict['repo']
       for ref in rdict['selected_refs']:
-        key = '%s:%s' % (repo_name, ref)
-        data = repo.ref(ref)
-        print 'Publishing %s => %s' % (key, data)
-        self.publishData(key, data)
+        head = repo.ref(ref)
+        key = '%s:%s' % (repo_name, ref.replace('/', ':'))
+        seen = []
+        tosee = [sha for sha in repo[repo.ref(ref)].parents if sha not in seen]
+        while len(tosee) > 0:
+          sha = tosee.pop()
+          if sha in seen:
+            continue
+          else:
+            seen.append(sha)
+          for s in repo[sha].parents:
+            if s not in seen:
+              tosee.append(s)
+          k = '%s:%s' % (key, sha)
+          self.publishData(k, head)
 
 if __name__ == '__main__':
   gitconfig_default = {
