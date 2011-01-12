@@ -168,7 +168,6 @@ if __name__ == '__main__':
     print 'Searching ...'
     df = gitdht.searchForValue(options.search_term)
     df.addCallback(searchResults)
-    gitdht.printContacts()
 
   if options.search_timer > 0:
     s = task.LoopingCall(searchNodes)
