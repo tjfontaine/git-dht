@@ -2,7 +2,9 @@ git-dht -- Git Decentralized and Distributed
 
 What good is DVCS if you still need to know the peers?
 
-Dependencies:
-Twisted -- http://twistedmatrix.com/
-Entangled -- http://entangled.sourceforge.net
-Dulwich -- http://github.com/jelmer/dulwich
+Dependencies
+
+node.js:
+  npm install iniparser
+  npm install dht
+  npm install libgit2 -- One Day
