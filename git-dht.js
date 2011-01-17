@@ -4,7 +4,6 @@ require.paths.push(path.join(process.env.HOME, path.join('lib', 'node')))
 var DHT = require('dht');
 var dns = require('dns');
 var Repo = require('libgit2').Repo;
-var RevWalk = require('libgit2').RevWalk;
 var ini = require('iniparser');
 
 var GIT_DHT_PORT = 39418;
@@ -58,8 +57,6 @@ dns.resolveSrv('_bootstrap._udp.git-dht.com', function(err, recs) {
   });
 });
 
-repos = [];
-
 for (section in dhtconfig) {
   if (section != 'global') {
     var repo_name = section;
@@ -68,18 +65,13 @@ for (section in dhtconfig) {
     var repo = new Repo(repo_path);
     repo.refs(function(ref, head) {
       console.log('ref: ' + ref + ' head: ' + head)
-      var head_commit = repo.lookup(head)
-      var revwalk = new RevWalk(repo)
-      revwalk.push(head_commit)
-      var commit = revwalk.next()
-      while(commit) {
-        console.log(commit.id().toString())
-        commit = revwalk.next()
-      }
+      var key = repo_name + ':' + ref
+      console.log('Announce: '+key)
+      repo.walk(head, function(commit) {
+        var ckey = key+':'+commit.id.toString()
+        //console.log(ckey +' => '+ head)
+      })
     });
-    repos.push(repo);
     //repo.close()
   }
 }
-
-setTimeout(20000, function () { })
